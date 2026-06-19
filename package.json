@@ -8,7 +8,9 @@
     "frontend"
   ],
   "scripts": {
-    "build": "node backend/node_modules/prisma/build/index.js generate --schema backend/prisma/schema.prisma && npm --workspace frontend run build",
+    "db:deploy": "node backend/node_modules/prisma/build/index.js migrate deploy --schema backend/prisma/schema.prisma",
+    "prisma:generate": "node backend/node_modules/prisma/build/index.js generate --schema backend/prisma/schema.prisma",
+    "build": "npm run db:deploy && npm run prisma:generate && npm --workspace frontend run build",
     "test": "npm --workspace backend test"
   }
 }
