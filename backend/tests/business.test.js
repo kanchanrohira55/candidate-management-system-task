@@ -54,6 +54,56 @@ describe("Business Rules Tests", () => {
 				status: "Applied",
 			});
 
-		expect(response.status).toBe(500);
+		expect(response.status).toBe(400);
+		expect(response.body.error).toBe("Candidate email already exists");
+	});
+
+	it("Should reject invalid candidate status", async () => {
+		const userEmail = `invalid-status${Date.now()}@test.com`;
+		await request(app)
+			.post("/api/auth/register")
+			.send({ email: userEmail, password: "123456" });
+
+		const loginRes = await request(app)
+			.post("/api/auth/login")
+			.send({ email: userEmail, password: "123456" });
+
+		const response = await request(app)
+			.post("/api/candidates")
+			.set("Authorization", `Bearer ${loginRes.body.token}`)
+			.send({
+				name: "Invalid Status",
+				email: `invalid-status${Date.now()}@test.com`,
+				status: "Hired",
+			});
+
+		expect(response.status).toBe(400);
+		expect(response.body.error).toContain("Status must be one of");
+	});
+
+	it("Should reject scores outside the allowed range", async () => {
+		const userEmail = `invalid-score${Date.now()}@test.com`;
+		await request(app)
+			.post("/api/auth/register")
+			.send({ email: userEmail, password: "123456" });
+
+		const loginRes = await request(app)
+			.post("/api/auth/login")
+			.send({ email: userEmail, password: "123456" });
+
+		const response = await request(app)
+			.post("/api/candidates")
+			.set("Authorization", `Bearer ${loginRes.body.token}`)
+			.send({
+				name: "Invalid Score",
+				email: `invalid-score${Date.now()}@test.com`,
+				status: "Applied",
+				technicalScore: 101,
+			});
+
+		expect(response.status).toBe(400);
+		expect(response.body.error).toBe(
+			"technicalScore must be an integer between 0 and 100",
+		);
 	});
 });
