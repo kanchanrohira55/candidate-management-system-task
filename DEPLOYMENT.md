@@ -1,46 +1,45 @@
 # Deployment Guide
 
-This project is designed to deploy on free-tier services.
+This project is designed to deploy on free-tier services without Render.
 
 ## Free-Tier Services
-- **Backend API:** Render free web service
+- **Full-stack app:** Vercel free project
 - **Database:** Neon free PostgreSQL project
-- **Frontend:** Vercel free project or Netlify free site
 - **CI:** GitHub Actions
 
 ## Branch-to-Environment Mapping
-Replace placeholders after services are created.
+Replace placeholders after Vercel projects are created.
 
-| Branch | Environment | Frontend URL | Backend API URL |
+| Branch | Environment | App URL | Database |
 | --- | --- | --- | --- |
-| `dev` | Development | `https://fresh-shifts-dev.vercel.app` | `https://fresh-shifts-api-dev.onrender.com` |
-| `staging` | Staging | `https://fresh-shifts-staging.vercel.app` | `https://fresh-shifts-api-staging.onrender.com` |
-| `main` | Production | `https://fresh-shifts.vercel.app` | `https://fresh-shifts-api.onrender.com` |
+| `dev` | Development | `https://fresh-shifts-dev.vercel.app` | Neon dev branch |
+| `staging` | Staging | `https://fresh-shifts-staging.vercel.app` | Neon staging branch |
+| `main` | Production | `https://fresh-shifts.vercel.app` | Neon production database |
 
-## Backend: Render
-Render can use the root `render.yaml` blueprint.
+## Vercel Full-Stack Deployment
+The root `vercel.json` deploys:
+- React/Vite frontend from `frontend`
+- Express API as a serverless function from `api/index.js`
+- API routes under `/api/*`
 
-Backend settings:
-- Root directory: `backend`
-- Build command: `npm ci && npx prisma generate`
-- Start command: `npx prisma migrate deploy && npm start`
-- Health check path: `/api/health`
+Vercel settings:
+- Project root: repository root
+- Install command: `npm install`
+- Build command: `npm run build`
+- Output directory: `frontend/dist`
 
-Required Render environment variables:
+Required Vercel environment variables:
 ```text
 NODE_ENV=production
-PORT=10000
-DATABASE_URL=<Neon pooled or direct PostgreSQL connection string>
-JWT_SECRET=<generated secure secret>
-FRONTEND_URL=<matching Vercel or Netlify frontend URL>
+DATABASE_URL=<matching Neon PostgreSQL connection string>
+JWT_SECRET=<strong generated secret>
+FRONTEND_URL=<matching Vercel app URL>
 ```
 
-For three environments, create three Render services from the same repo and connect them to:
-- `dev`
-- `staging`
-- `main`
-
-Each service should use its own Neon database or at least its own Neon database branch.
+Create three Vercel projects or branch deployments:
+- `fresh-shifts-dev` connected to `dev`
+- `fresh-shifts-staging` connected to `staging`
+- `fresh-shifts` connected to `main`
 
 ## Database: Neon
 Create a free Neon project.
@@ -50,52 +49,22 @@ Recommended setup:
 - `staging` branch database for staging validation
 - `main` branch database for production
 
-Use the Neon connection string as `DATABASE_URL` in Render.
-
-## Frontend: Vercel
-Use the `frontend` folder as the Vercel project root.
-
-Vercel config:
-- Config file: `frontend/vercel.json`
-- Install command: `npm ci`
-- Build command: `npm run build`
-- Output directory: `dist`
-
-Required Vercel environment variable:
-```text
-VITE_API_URL=https://<render-backend-url>/api
-```
-
-For three environments, create one Vercel project with branch deployments or three projects mapped to:
-- `dev`
-- `staging`
-- `main`
-
-## Frontend: Netlify Alternative
-Use the `frontend` folder as the Netlify base directory.
-
-Netlify config:
-- Config file: `frontend/netlify.toml`
-- Build command: `npm run build`
-- Publish directory: `dist`
-
-Required Netlify environment variable:
-```text
-VITE_API_URL=https://<render-backend-url>/api
-```
+Use each Neon connection string as `DATABASE_URL` in the matching Vercel project.
 
 ## CI/CD
-GitHub Actions currently validates pull requests and pushes to `dev`, `staging`, and `main`.
+GitHub Actions validates pull requests and pushes to `dev`, `staging`, and `main`.
 
 Workflow evidence:
 - Installs backend dependencies
+- Audits high-severity backend dependencies
 - Validates Prisma schema
 - Generates Prisma client
 - Runs backend tests
 - Installs frontend dependencies
+- Audits high-severity frontend dependencies
 - Builds frontend
 
-Platform deployments are handled by Render and Vercel/Netlify branch integrations after GitHub pushes pass CI.
+Vercel handles deployment after GitHub pushes pass CI.
 
 ## Local Demo Without Paid Services
 For local demo without PostgreSQL:

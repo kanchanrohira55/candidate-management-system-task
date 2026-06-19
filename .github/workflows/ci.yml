@@ -16,10 +16,6 @@ jobs:
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/candidate_management_test
       FRONTEND_URL: http://localhost:5173
 
-    defaults:
-      run:
-        working-directory: ./backend
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -29,21 +25,19 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
-        cache-dependency-path: |
-          ./backend/package-lock.json
-          ./frontend/package-lock.json
+        cache-dependency-path: './package-lock.json'
 
-    - name: Backend | Install dependencies
+    - name: Workspace | Install dependencies
       run: npm ci
 
-    - name: Backend | Audit production dependencies
+    - name: Workspace | Audit production dependencies
       run: npm audit --audit-level=high --omit=dev
 
     - name: Backend | Validate Prisma schema
-      run: npx prisma validate
+      run: npm --workspace backend exec prisma validate
 
     - name: Backend | Generate Prisma client
-      run: npx prisma generate
+      run: npm --workspace backend exec prisma generate
 
     - name: Backend | Prepare test database
       run: node -e "console.log('NODE_ENV=test uses the in-memory test database adapter; no external database service is required for CI.')"
@@ -51,14 +45,5 @@ jobs:
     - name: Backend | Run automated tests
       run: npm test
 
-    - name: Frontend | Install dependencies
-      run: npm ci
-      working-directory: ./frontend
-
-    - name: Frontend | Audit production dependencies
-      run: npm audit --audit-level=high --omit=dev
-      working-directory: ./frontend
-
-    - name: Frontend | Build
+    - name: Vercel | Build full-stack app
       run: npm run build
-      working-directory: ./frontend

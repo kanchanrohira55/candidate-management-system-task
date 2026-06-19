@@ -1,0 +1,14 @@
+{
+  "name": "fresh-shifts-candidate-management",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm --workspace backend exec prisma generate && npm --workspace frontend run build",
+    "test": "npm --workspace backend test"
+  }
+}

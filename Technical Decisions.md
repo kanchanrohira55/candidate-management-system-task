@@ -7,7 +7,7 @@ The current repository uses **React, Vite, Node.js, Express, Prisma, PostgreSQL,
 - **Node.js with Express** was chosen because it is lightweight, familiar, and well suited for building REST APIs quickly.
 - **Prisma** was chosen to keep database access structured and maintainable instead of writing raw SQL throughout controllers.
 - **PostgreSQL** was chosen as the target database because it is production-ready and available through free-tier providers such as Neon.
-- **Render, Neon, and Vercel/Netlify** were selected for deployment planning because their free tiers are enough for an assessment-sized application.
+- **Vercel and Neon** were selected for deployment planning because their free tiers are enough for an assessment-sized full-stack application without requiring Render card verification.
 - **Vitest** was chosen because the project uses ECMAScript modules and Vitest supports this cleanly with minimal configuration.
 - **Supertest** was chosen for API-level integration testing without needing a running external server.
 
@@ -37,7 +37,7 @@ The current repository uses **React, Vite, Node.js, Express, Prisma, PostgreSQL,
 6. **CORS policy:** CORS should be restricted to approved frontend origins in deployed environments.
 
 ### If given one additional week, what improvements would you implement?
-- **Deployment:** Create live Render, Neon, and Vercel/Netlify environments using the included deployment configs.
+- **Deployment:** Create live Vercel and Neon environments using the included deployment configs.
 - **Database hardening:** Add more domain-level constraints as the product grows, such as separate interview note records.
 - **Security hardening:** Tune rate limit thresholds from real usage data and add account lockout/alerting if needed.
 - **Pagination and filtering:** Add candidate pagination, filtering by status, and sorting by score or created date.
@@ -47,7 +47,7 @@ The current repository uses **React, Vite, Node.js, Express, Prisma, PostgreSQL,
 - **Structured logging:** Add a logger such as Pino or Winston for request and error logs.
 - **Error tracking:** Use Sentry free tier for backend error reporting.
 - **Uptime monitoring:** Use UptimeRobot free tier against `/api/health`.
-- **Platform logs:** Use Render logs for backend runtime visibility.
+- **Platform logs:** Use Vercel function logs for backend runtime visibility.
 - **Database observability:** Use Neon dashboard metrics for connection and query health.
 
 ### What AI tools did you use during development and how did you validate their output?

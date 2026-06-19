@@ -51,7 +51,9 @@ candidate-management-system/
   DEPLOYMENT.md
   docs/
     submission-checklist.md
-  render.yaml
+  api/
+    index.js
+  vercel.json
   .github/workflows/ci.yml
   backend/
     prisma/
@@ -68,9 +70,7 @@ candidate-management-system/
   frontend/
     src/
     index.html
-    netlify.toml
     package.json
-    vercel.json
 ```
 
 ## Setup Instructions
@@ -119,7 +119,7 @@ This stores data in memory until the backend process stops.
    npm install
    ```
 3. Create a `.env` file using `frontend/.env.example` as a template.
-4. Set the API URL:
+4. Set the API URL for local backend:
    ```text
    VITE_API_URL=http://localhost:5000/api
    ```
@@ -187,26 +187,24 @@ The CI workflow:
 This project is intended to stay within free-tier resources for the assessment.
 
 Recommended free-tier setup:
-- **Backend:** Render free tier
+- **Full-stack app:** Vercel free tier
 - **Database:** Neon free tier PostgreSQL
-- **Frontend:** Vercel or Netlify free tier
 - **CI/CD:** GitHub Actions
 - **Monitoring, if needed:** Sentry free tier and UptimeRobot free tier
 
 Deployment evidence included in this repository:
-- `render.yaml` for Render backend deployment
-- `frontend/vercel.json` for Vercel frontend deployment
-- `frontend/netlify.toml` as a Netlify frontend alternative
+- `vercel.json` for Vercel full-stack deployment
+- `api/index.js` for Express API serverless deployment
 - `DEPLOYMENT.md` with environment setup, branch mapping, and required variables
 - `docs/submission-checklist.md` with submission URLs and demo recording checklist
 
 Placeholder environment URLs to replace after service creation:
 
-| Environment | Frontend URL | Backend API URL |
+| Environment | App URL | API Health URL |
 | --- | --- | --- |
-| Development | `https://fresh-shifts-dev.vercel.app` | `https://fresh-shifts-api-dev.onrender.com` |
-| Staging | `https://fresh-shifts-staging.vercel.app` | `https://fresh-shifts-api-staging.onrender.com` |
-| Production | `https://fresh-shifts.vercel.app` | `https://fresh-shifts-api.onrender.com` |
+| Development | `https://fresh-shifts-dev.vercel.app` | `https://fresh-shifts-dev.vercel.app/api/health` |
+| Staging | `https://fresh-shifts-staging.vercel.app` | `https://fresh-shifts-staging.vercel.app/api/health` |
+| Production | `https://fresh-shifts.vercel.app` | `https://fresh-shifts.vercel.app/api/health` |
 
 ## Environment Structure
 Recommended branch-to-environment mapping:
@@ -218,15 +216,15 @@ Recommended branch-to-environment mapping:
 Current repository evidence:
 - Branches exist for `dev`, `staging`, and `main`.
 - CI is configured for all three branches.
-- Deployment configuration files are included for Render and Vercel/Netlify.
-- Hosting targets still need to be connected in the selected free-tier platform dashboards.
+- Vercel full-stack deployment configuration is included.
+- Hosting targets still need to be connected in Vercel.
 
 ## Known Gaps
-- Deployment configuration is present, but live URLs still need to be created in Render, Neon, and Vercel/Netlify.
+- Deployment configuration is present, but live URLs still need to be created in Vercel and Neon.
 - Role-based access control is not implemented.
 
 ## Assumptions
 1. Any authenticated user can manage candidates for this MVP.
 2. API tests should not require a paid or hosted database.
 3. PostgreSQL is the target database for deployed environments.
-4. The frontend communicates with the backend through `VITE_API_URL`.
+4. In production, frontend and API can run on the same Vercel domain under `/api`.
