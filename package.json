@@ -8,7 +8,7 @@
     "frontend"
   ],
   "scripts": {
-    "build": "npm --workspace backend exec prisma generate && npm --workspace frontend run build",
+    "build": "npm --workspace backend run prisma:generate && npm --workspace frontend run build",
     "test": "npm --workspace backend test"
   }
 }
