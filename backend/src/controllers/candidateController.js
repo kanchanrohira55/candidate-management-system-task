@@ -1,5 +1,102 @@
 import prisma from "../config/prisma.js";
 
+const ALLOWED_STATUSES = [
+	"Applied",
+	"Shortlisted",
+	"Interviewed",
+	"Selected",
+	"Rejected",
+];
+
+const SCORE_FIELDS = [
+	"technicalScore",
+	"communicationScore",
+	"reliabilityScore",
+];
+
+const isUniqueConstraintError = (error) => error?.code === "P2002";
+
+const isRecordNotFoundError = (error) =>
+	error?.code === "P2025" || error?.message === "Candidate not found";
+
+const validateEmail = (email) =>
+	typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const parseScore = (field, value, defaultValue) => {
+	if (value === undefined || value === null || value === "") {
+		return { value: defaultValue };
+	}
+
+	const score = Number(value);
+
+	if (!Number.isInteger(score) || score < 0 || score > 100) {
+		return { error: `${field} must be an integer between 0 and 100` };
+	}
+
+	return { value: score };
+};
+
+const buildCandidateData = (body, { requireNameAndEmail = false } = {}) => {
+	const data = {};
+
+	if (requireNameAndEmail && (!body.name || !body.email)) {
+		return { error: "Name and email required" };
+	}
+
+	if (body.name !== undefined) {
+		if (typeof body.name !== "string" || body.name.trim() === "") {
+			return { error: "Name is required" };
+		}
+
+		data.name = body.name.trim();
+	}
+
+	if (body.email !== undefined) {
+		if (!validateEmail(body.email)) {
+			return { error: "Valid email is required" };
+		}
+
+		data.email = body.email.trim().toLowerCase();
+	}
+
+	const status = body.status ?? (requireNameAndEmail ? "Applied" : undefined);
+
+	if (status !== undefined) {
+		if (!ALLOWED_STATUSES.includes(status)) {
+			return {
+				error: `Status must be one of: ${ALLOWED_STATUSES.join(", ")}`,
+			};
+		}
+
+		data.status = status;
+	}
+
+	for (const field of SCORE_FIELDS) {
+		const defaultValue = requireNameAndEmail ? 0 : undefined;
+		const result = parseScore(field, body[field], defaultValue);
+
+		if (result.error) {
+			return { error: result.error };
+		}
+
+		if (result.value !== undefined) {
+			data[field] = result.value;
+		}
+	}
+
+	if (body.notes !== undefined) {
+		if (typeof body.notes !== "string") {
+			return { error: "Notes must be text" };
+		}
+
+		data.notes = body.notes;
+	} else if (requireNameAndEmail) {
+		data.notes = "";
+	}
+
+	return { data };
+};
+
 export const getCandidates = async (req, res) => {
 	try {
 		const candidates = await prisma.candidate.findMany({
@@ -32,34 +129,24 @@ export const getCandidate = async (req, res) => {
 
 export const createCandidate = async (req, res) => {
 	try {
-		const {
-			name,
-			email,
-			status,
-			technicalScore,
-			communicationScore,
-			reliabilityScore,
-			notes,
-		} = req.body;
+		const validation = buildCandidateData(req.body, {
+			requireNameAndEmail: true,
+		});
 
-		if (!name || !email) {
-			return res.status(400).json({ error: "Name and email required" });
+		if (validation.error) {
+			return res.status(400).json({ error: validation.error });
 		}
 
 		const candidate = await prisma.candidate.create({
-			data: {
-				name,
-				email,
-				status: status || "Applied",
-				technicalScore: parseInt(technicalScore) || 0,
-				communicationScore: parseInt(communicationScore) || 0,
-				reliabilityScore: parseInt(reliabilityScore) || 0,
-				notes: notes || "",
-			},
+			data: validation.data,
 		});
 
 		res.status(201).json(candidate);
 	} catch (error) {
+		if (isUniqueConstraintError(error)) {
+			return res.status(400).json({ error: "Candidate email already exists" });
+		}
+
 		console.error("Error:", error);
 		res.status(500).json({ error: "Failed to create candidate" });
 	}
@@ -68,31 +155,27 @@ export const createCandidate = async (req, res) => {
 export const updateCandidate = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const {
-			name,
-			email,
-			status,
-			technicalScore,
-			communicationScore,
-			reliabilityScore,
-			notes,
-		} = req.body;
+		const validation = buildCandidateData(req.body);
+
+		if (validation.error) {
+			return res.status(400).json({ error: validation.error });
+		}
 
 		const candidate = await prisma.candidate.update({
 			where: { id },
-			data: {
-				name,
-				email,
-				status,
-				technicalScore: parseInt(technicalScore) || 0,
-				communicationScore: parseInt(communicationScore) || 0,
-				reliabilityScore: parseInt(reliabilityScore) || 0,
-				notes: notes || "",
-			},
+			data: validation.data,
 		});
 
 		res.json(candidate);
 	} catch (error) {
+		if (isUniqueConstraintError(error)) {
+			return res.status(400).json({ error: "Candidate email already exists" });
+		}
+
+		if (isRecordNotFoundError(error)) {
+			return res.status(404).json({ error: "Candidate not found" });
+		}
+
 		console.error("Error:", error);
 		res.status(500).json({ error: "Failed to update candidate" });
 	}
@@ -108,6 +191,10 @@ export const deleteCandidate = async (req, res) => {
 
 		res.json({ message: "Candidate deleted successfully" });
 	} catch (error) {
+		if (isRecordNotFoundError(error)) {
+			return res.status(404).json({ error: "Candidate not found" });
+		}
+
 		console.error("Error:", error);
 		res.status(500).json({ error: "Failed to delete candidate" });
 	}

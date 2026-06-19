@@ -1,44 +1,56 @@
 # Technical Decisions
 
 ### Why did you choose your technology stack?
-I chose **React, Node.js, Express, and Prisma** because this stack provides a perfect balance of development speed, ecosystem maturity, and performance. 
-- **React** allows for modular component architecture and rapid UI iterations. 
-- **Node.js with Express** offers a lightweight and unopinionated backend that scales well for I/O heavy operations like database querying and serving JSON APIs.
-- **Prisma** is a modern ORM that ensures type-safety. It drastically reduces runtime errors related to database queries compared to traditional string-based SQL queries or older ORMs like Sequelize.
-- **Vitest** was selected over Jest for testing because it natively supports ECMAScript modules without complex Babel configuration, making it the fastest and most seamless choice for a modern Node/Vite stack.
+The current repository uses **React, Vite, Node.js, Express, Prisma, PostgreSQL, Vitest, and Supertest**.
+
+- **React with Vite** was chosen for a small, fast frontend that can be deployed on free-tier static hosting.
+- **Node.js with Express** was chosen because it is lightweight, familiar, and well suited for building REST APIs quickly.
+- **Prisma** was chosen to keep database access structured and maintainable instead of writing raw SQL throughout controllers.
+- **PostgreSQL** was chosen as the target database because it is production-ready and available through free-tier providers such as Neon.
+- **Render, Neon, and Vercel/Netlify** were selected for deployment planning because their free tiers are enough for an assessment-sized application.
+- **Vitest** was chosen because the project uses ECMAScript modules and Vitest supports this cleanly with minimal configuration.
+- **Supertest** was chosen for API-level integration testing without needing a running external server.
 
 ### How would you onboard a junior developer onto this project?
-1. **Local Setup & Access:** Ensure they have access to the repository, Node.js, and a code editor. Walk them through the `README.md` setup instructions.
-2. **Architecture Overview:** Explain the data flow: from React frontend components -> Axios API calls -> Express routes -> Controllers -> Prisma ORM -> Database.
-3. **Pair Programming:** Start them on a small, contained task (e.g., adding a new field to the Candidate model, like "LinkedIn URL"). Pair program through the schema change, route update, and frontend form to give them a complete vertical slice.
-4. **Codebase Conventions:** Introduce them to our testing standards, CI/CD pipeline, and PR process.
+1. **Local setup:** Have them clone the repository, install backend dependencies, copy `.env.example`, and run the test suite.
+2. **Architecture overview:** Walk through the request flow: React UI -> REST API -> Express routes -> authentication middleware -> controllers -> Prisma or test adapter -> database.
+3. **First task:** Assign a small vertical task, such as adding a candidate field across the form, API validation, schema, and tests.
+4. **Testing habit:** Require them to run backend tests and frontend build before opening a pull request.
+5. **CI review:** Show them the GitHub Actions workflow so they understand how automated validation protects the branches.
 
 ### What items would you review before approving a Pull Request?
-- **Functionality:** Does the code solve the problem or fulfill the feature requirement effectively?
-- **Security:** Are new endpoints protected by the `authenticate` middleware? Is user input validated/sanitized to prevent injection attacks?
-- **Testing:** Are there adequate unit/integration tests for the new code? Did the CI pipeline pass successfully?
-- **Code Quality:** Is the code clean, readable, and properly modularized? Are variables meaningfully named? Are there unnecessary `console.log`s?
-- **Design:** Does the frontend code adhere to the established premium UI aesthetic (glassmorphism, tailwind standards)?
+- **Functionality:** Does the change satisfy the requirement without breaking existing API behavior?
+- **Validation:** Are request bodies validated before writing to the database?
+- **Security:** Are protected routes behind JWT authentication? Are secrets read from environment variables instead of defaults?
+- **Error handling:** Are expected user/data errors returned as `400` or `404` instead of generic `500` responses?
+- **Testing:** Are meaningful tests added or updated, and does CI pass?
+- **Frontend quality:** Does the UI support the core workflow without hiding validation or API errors?
+- **Maintainability:** Does the change follow the existing route/controller/config structure?
+- **Documentation:** If behavior or setup changed, were README and technical notes updated?
 
 ### What security risks should be considered for this application?
-1. **Broken Authentication/Authorization:** Relying solely on client-side routing protection. All candidate API routes must enforce JWT verification (which was fixed in this implementation).
-2. **Data Exposure:** Returning sensitive data (like password hashes) in API responses. The API should strictly filter payload responses.
-3. **Cross-Site Scripting (XSS):** If interview notes allow HTML, malicious scripts could be injected. React automatically escapes strings, but caution must be taken if `dangerouslySetInnerHTML` is ever used.
-4. **Rate Limiting:** Without rate-limiting, the `/login` endpoint is vulnerable to brute-force password guessing.
+1. **Weak authentication configuration:** `JWT_SECRET` must be required in every non-test environment. This has been addressed by removing the unsafe fallback secret.
+2. **Brute-force login attempts:** The login endpoint should add rate limiting before production deployment.
+3. **Authorization gaps:** The MVP allows any authenticated user to manage all candidates. Role-based access control should be added if different HR roles exist.
+4. **Input validation:** Candidate status, score ranges, email format, and notes type must be validated before database writes. This is now enforced in the API.
+5. **XSS risk in notes:** Notes are stored as text. Any future frontend must render notes safely and avoid unsafe HTML injection.
+6. **CORS policy:** CORS should be restricted to approved frontend origins in deployed environments.
 
 ### If given one additional week, what improvements would you implement?
-- **Role-Based Access Control (RBAC):** Differentiating between "Admin" (can delete candidates) and "Interviewer" (can only add scores/notes).
-- **Advanced Filtering and Sorting:** Adding backend pagination, filtering by status, and sorting by score.
-- **File Uploads:** Implementing cloud storage integration (like AWS S3) to allow uploading candidate resumes.
-- **Automated Email Notifications:** Integrating SendGrid or AWS SES to notify candidates when their status changes.
+- **Deployment:** Create live Render, Neon, and Vercel/Netlify environments using the included deployment configs.
+- **Database hardening:** Add more domain-level constraints as the product grows, such as separate interview note records.
+- **Security hardening:** Tune rate limit thresholds from real usage data and add account lockout/alerting if needed.
+- **Pagination and filtering:** Add candidate pagination, filtering by status, and sorting by score or created date.
+- **Role-based access control:** Add admin/interviewer permissions for sensitive actions such as delete.
 
 ### What monitoring and logging would you implement before going live?
-- **Application Performance Monitoring (APM):** Integrating New Relic or Datadog to monitor API latency, database query bottlenecks, and memory usage.
-- **Centralized Logging:** Using tools like Winston or Pino in Node.js to stream structured JSON logs to services like Papertrail or ELK Stack for easier debugging.
-- **Error Tracking:** Setting up Sentry on both the React frontend and Node backend to capture unhandled exceptions, alerting the team instantly.
-- **Uptime Monitoring:** Pingdom or Better Uptime to monitor the `/api/health` endpoint and alert engineers if the service goes down.
+- **Structured logging:** Add a logger such as Pino or Winston for request and error logs.
+- **Error tracking:** Use Sentry free tier for backend error reporting.
+- **Uptime monitoring:** Use UptimeRobot free tier against `/api/health`.
+- **Platform logs:** Use Render logs for backend runtime visibility.
+- **Database observability:** Use Neon dashboard metrics for connection and query health.
 
 ### What AI tools did you use during development and how did you validate their output?
-- **AI Assistants used:** LLM Assistants integrated into the coding environment.
-- **Usage:** Brainstorming modern UI color palettes, generating boilerplate test structures, and validating CI/CD YAML syntax.
-- **Validation:** Every piece of AI-generated code was manually reviewed for context accuracy, tested locally by running the application, and verified automatically through the Vitest testing suite. I ensure that no opaque "black box" code is committed without understanding the exact execution flow.
+- **AI tools used:** LLM coding assistants in the development environment.
+- **Usage:** Repository audit, test/CI fixes, validation hardening, and documentation updates.
+- **Validation:** Changes were checked against repository evidence, reviewed through diffs, and verified with automated tests. The current backend test suite passes locally with 23 tests.
