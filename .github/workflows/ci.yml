@@ -45,5 +45,5 @@ jobs:
     - name: Backend | Run automated tests
       run: npm test
 
-    - name: Vercel | Build full-stack app
+    - name: Frontend | Build app
       run: npm run build
